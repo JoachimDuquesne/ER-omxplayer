@@ -16,6 +16,12 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
+#include "VideoMQTT.h"
+
+#define MQTT_PORT	1883
+#define MQTT_BROKER_IP	"127.0.0.1"	// Loopback
+#define MQTT_TOPIC	"VideoControlTopic"
+#define QOS			0
 
 #include <stdio.h>
 #include <signal.h>
@@ -98,6 +104,7 @@ int               m_audio_index_use     = 0;
 OMXClock          *m_av_clock           = NULL;
 OMXControl        m_omxcontrol;
 Keyboard          *m_keyboard           = NULL;
+VideoMQTT 		  * m_VideoMQTT 		= NULL;
 OMXAudioConfig    m_config_audio;
 OMXVideoConfig    m_config_video;
 OMXPacket         *m_omx_pkt            = NULL;
@@ -1023,6 +1030,9 @@ int main(int argc, char *argv[])
     m_keyboard->setKeymap(keymap);
     m_keyboard->setDbusName(m_dbus_name);
   }
+
+m_VideoMQTT = new VideoMQTT(MQTT_BROKER_IP,MQTT_PORT,QOS,120,MQTT_TOPIC);   
+m_VideoMQTT->setDbusName(m_dbus_name); 
 
   if(!m_omx_reader.Open(m_filename.c_str(), m_dump_format, m_config_audio.is_live, m_timeout, m_cookie.c_str(), m_user_agent.c_str(), m_lavfdopts.c_str(), m_avdict.c_str()))
     goto do_exit;
