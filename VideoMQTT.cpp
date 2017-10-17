@@ -1,25 +1,31 @@
 
 #include "VideoMQTT.h"
 
-VideoMQTT::VideoMQTT(const char *host, int port, int QoS, int keepalive, const char * _topic)
+VideoMQTT::VideoMQTT(std::string _host, std::string _topic_cmd, std::string _topic_status, int _port, int _QoS)
 {
+	host 		= _host ;
+	topic_cmd 	= _topic_cmd;
+	topic_status = _topic_status ;
+	port = _port;
+	QoS  = _QoS;
+	
 	mosqpp::lib_init();
 	printf("VideoMQTT Init");
-	connect(host, port, keepalive);
-	subscribe(NULL,_topic,QoS);
+	connect(host.c_str(), port, 120);
+	subscribe(NULL,topic_cmd.c_str(),QoS);
+	
+	if (dbus_connect() < 0)
+	{
+		CLog::Log(LOGWARNING, "VideoMQTT: DBus connection failed");
+	} 
+	else 
+	{
+		CLog::Log(LOGDEBUG, "VideoMQTT: DBus connection succeeded");
+	}
 
-  if (dbus_connect() < 0)
-  {
-    CLog::Log(LOGWARNING, "VideoMQTT: DBus connection failed");
-  } 
-  else 
-  {
-    CLog::Log(LOGDEBUG, "VideoMQTT: DBus connection succeeded");
-  }
-
-  dbus_threads_init_default();
-  Create();
-  m_action = -1;
+	dbus_threads_init_default();
+	Create();
+	m_action = -1;
 }
 
 VideoMQTT::~VideoMQTT() 
@@ -79,26 +85,6 @@ void VideoMQTT::on_message(const struct mosquitto_message *mess)
 	}
 	fprintf(stderr,"\n");
 
-/*	if(!strcmp("start",cmd[0].c_str()))
-		if(i == 2) // We need one argument
-			VideoControls::Start(cmd[1].c_str());
-		
-	if(!strcmp("setPosition",cmd[0].c_str()))
-		if(i == 3) // We need two argument
-			VideoControls::SetPosition(atoi(cmd[1].c_str()),atoi(cmd[2].c_str()));
-
-	if(!strcmp("stop",cmd[0].c_str()))
-		VideoControls::Stop();
-
-	if(!strcmp("reset",cmd[0].c_str()))
-		VideoControls::Reset();
-
-	if(!strcmp("pause",cmd[0].c_str()))
-		VideoControls::Toggle();
-*/
-	
-
-
   if(!strcmp(cmd[0].c_str(),"SetPosition"))
   {
     send_dbus_cmd(cmd[0].c_str(), (int64_t)(atoi(cmd[1].c_str())*1000000));
@@ -110,8 +96,11 @@ void VideoMQTT::on_message(const struct mosquitto_message *mess)
   {
   	send_dbus_cmd(cmd[0].c_str());
   }
-  
+}
 
+void VideoMQTT::send_MQTT_msg(const struct mosquitto_message *mess)
+{
+	
 }
 
 void VideoMQTT::send_dbus_cmd(const char * cmd)

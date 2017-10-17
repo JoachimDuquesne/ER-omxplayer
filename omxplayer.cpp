@@ -18,11 +18,6 @@
  */
 #include "VideoMQTT.h"
 
-#define MQTT_PORT	1883
-#define MQTT_BROKER_IP	"127.0.0.1"	// Loopback
-#define MQTT_TOPIC	"VideoControlTopic"
-#define QOS			0
-
 #include <stdio.h>
 #include <signal.h>
 #include <stdlib.h>
@@ -104,7 +99,12 @@ int               m_audio_index_use     = 0;
 OMXClock          *m_av_clock           = NULL;
 OMXControl        m_omxcontrol;
 Keyboard          *m_keyboard           = NULL;
-VideoMQTT 		  * m_VideoMQTT 		= NULL;
+		VideoMQTT 		  *m_VideoMQTT 			= NULL;
+		std::string       m_mqtt_broker_ip		= "";
+		int 			  m_mqtt_port			= 1883;
+		int				  m_mqtt_qos			= 0;
+		std::string       m_mqtt_topic_cmd		= "VideoControl";
+		std::string       m_mqtt_topic_status	= "VideoStatus";
 OMXAudioConfig    m_config_audio;
 OMXVideoConfig    m_config_video;
 OMXPacket         *m_omx_pkt            = NULL;
@@ -576,7 +576,13 @@ int main(int argc, char *argv[])
   const int http_user_agent_opt = 0x301;
   const int lavfdopts_opt   = 0x400;
   const int avdict_opt      = 0x401;
-
+  
+  const int broker_ip_opt	= 0x410;
+  const int control_topic_opt = 0x411;
+  const int status_topic_opt = 0x412;
+  const int QoS_opt			= 0x413;
+  const int broker_port_opt = 0x414;
+  
   struct option longopts[] = {
     { "info",         no_argument,        NULL,          'i' },
     { "with-info",    no_argument,        NULL,          'I' },
@@ -638,6 +644,13 @@ int main(int argc, char *argv[])
     { "user-agent",   required_argument,  NULL,          http_user_agent_opt },
     { "lavfdopts",    required_argument,  NULL,          lavfdopts_opt },
     { "avdict",       required_argument,  NULL,          avdict_opt },
+    
+    { "broker-ip",    required_argument,  NULL,          broker_ip_opt },
+    { "control-topic",required_argument,  NULL,          control_topic_opt },
+    { "status-topic", required_argument,  NULL,          status_topic_opt },
+    { "qos",		  required_argument,  NULL,          QoS_opt },
+    { "broker-port",  required_argument,  NULL,          broker_port_opt },
+    
     { 0, 0, 0, 0 }
   };
 
@@ -929,6 +942,23 @@ int main(int argc, char *argv[])
       case ':':
         return EXIT_FAILURE;
         break;
+        
+      case broker_ip_opt :  
+      	m_mqtt_broker_ip = optarg;
+      	break;
+      case control_topic_opt :
+      	m_mqtt_topic_cmd = optarg;
+      	break;
+      case status_topic_opt :
+      	m_mqtt_topic_status = optarg;
+      	break;
+      case QoS_opt :
+       	m_mqtt_qos = atoi(optarg);
+      	break;
+      case broker_port_opt :
+       	m_mqtt_port = atoi(optarg);
+      	break;
+        
       default:
         return EXIT_FAILURE;
         break;
@@ -1031,8 +1061,11 @@ int main(int argc, char *argv[])
     m_keyboard->setDbusName(m_dbus_name);
   }
 
-m_VideoMQTT = new VideoMQTT(MQTT_BROKER_IP,MQTT_PORT,QOS,120,MQTT_TOPIC);   
-m_VideoMQTT->setDbusName(m_dbus_name); 
+  if (strcmp(m_mqtt_broker_ip.c_str(),""))
+  {
+	m_VideoMQTT = new VideoMQTT(m_mqtt_broker_ip, m_mqtt_topic_cmd, m_mqtt_topic_status, m_mqtt_port, m_mqtt_qos);   
+	m_VideoMQTT->setDbusName(m_dbus_name);   
+  }
 
   if(!m_omx_reader.Open(m_filename.c_str(), m_dump_format, m_config_audio.is_live, m_timeout, m_cookie.c_str(), m_user_agent.c_str(), m_lavfdopts.c_str(), m_avdict.c_str()))
     goto do_exit;

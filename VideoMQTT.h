@@ -21,14 +21,21 @@
  {
  protected:
   int m_action;
+  std::string host;
+  int port;
+  int QoS;
+  int keepalive;
+  std::string topic_cmd;
+  std::string topic_status;
   DBusConnection *conn;
   std::string m_dbus_name;
   
  public:
-  VideoMQTT(const char *host, int port, int QoS, int keepalive, const char * _topic);
+  VideoMQTT(std::string _host, std::string _topic_cmd, std::string _topic_status, int _port, int _QoS);
   ~VideoMQTT();
   void Close();
   void Process();
+  void send_MQTT_msg(const struct mosquitto_message *mess);
   void setDbusName(std::string dbus_name);
   void Sleep(unsigned int dwMilliSeconds);
   //int getEvent();
