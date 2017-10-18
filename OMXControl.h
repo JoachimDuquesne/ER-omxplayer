@@ -36,6 +36,14 @@ protected:
   OMXReader          *reader;
   OMXPlayerSubtitles *subtitles;
   VideoMQTT 		 *videoMQTT;
+  bool 				 riddle_active=false;
+  bool 				 riddle_solved=false;
+  int 				 riddle_count=0;
+  char 				 riddle_code[4];
+  const int	 		 initial_position = 1;
+  const int			 solved_position = 12;
+  const int	 		 step_size = 2;
+    
 public:
   OMXControl();
   ~OMXControl();

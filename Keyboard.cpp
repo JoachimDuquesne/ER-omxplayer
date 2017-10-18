@@ -99,9 +99,17 @@ void Keyboard::Process()
     if (chnum > 0)
       CLog::Log(LOGDEBUG, "Keyboard: character %c (0x%x)", ch[0], ch[0]);
 
-    if (m_keymap[ch[0]] != 0)
-          send_action(m_keymap[ch[0]]);
-    else
+//    if (m_keymap[ch[0]] != 0)
+//          send_action(m_keymap[ch[0]]);
+	if(ch[0]=='a'||ch[0]=='g'||ch[0]=='m'||ch[0]=='s'||ch[0]=='y'||ch[0]=='E'||ch[0]=='K'||ch[0]=='Q'||ch[0]=='W'||ch[0]=='2'||
+	   ch[0]=='b'||ch[0]=='h'||ch[0]=='n'||ch[0]=='t'||ch[0]=='z'||ch[0]=='F'||ch[0]=='L'||ch[0]=='R'||ch[0]=='X'||ch[0]=='3'||
+	   ch[0]=='c'||ch[0]=='i'||ch[0]=='o'||ch[0]=='u'||ch[0]=='A'||ch[0]=='G'||ch[0]=='M'||ch[0]=='S'||ch[0]=='Y'||ch[0]=='4'||
+	   ch[0]=='d'||ch[0]=='j'||ch[0]=='p'||ch[0]=='v'||ch[0]=='B'||ch[0]=='H'||ch[0]=='N'||ch[0]=='T'||ch[0]=='Z'||ch[0]=='5'||
+	   ch[0]=='e'||ch[0]=='k'||ch[0]=='q'||ch[0]=='w'||ch[0]=='C'||ch[0]=='I'||ch[0]=='O'||ch[0]=='U'||ch[0]=='0'||ch[0]=='6'||
+	   ch[0]=='f'||ch[0]=='l'||ch[0]=='r'||ch[0]=='x'||ch[0]=='D'||ch[0]=='J'||ch[0]=='P'||ch[0]=='V'||ch[0]=='1'||ch[0]=='7'||
+	   ch[0]=='8'||ch[0]=='9')
+		send_action((char)ch[0]);
+    //else
       Sleep(20);
   }
 }
@@ -111,6 +119,51 @@ int Keyboard::getEvent()
   int ret = m_action;
   m_action = -1;
   return ret;
+}
+
+void Keyboard::send_action(char action) 
+{
+  DBusMessage *message = NULL, *reply = NULL;
+  DBusError error;
+  m_action = action;
+  if (!conn)
+    return;
+
+  dbus_error_init(&error);
+
+  if (!(message = dbus_message_new_method_call(m_dbus_name.c_str(),
+                                              OMXPLAYER_DBUS_PATH_SERVER, 
+                                              OMXPLAYER_DBUS_INTERFACE_PLAYER,
+                                              "Code"))) 
+  {
+    CLog::Log(LOGWARNING, "Keyboard: DBus error 1");
+    goto fail;
+  }
+
+  dbus_message_append_args(message, DBUS_TYPE_BYTE, &action, DBUS_TYPE_INVALID);
+  
+  reply = dbus_connection_send_with_reply_and_block(conn, message, -1, &error);
+
+  if (!reply || dbus_error_is_set(&error))
+    goto fail;
+
+  dbus_message_unref(message);
+  dbus_message_unref(reply);
+
+  return;
+
+fail:
+  if (dbus_error_is_set(&error)) 
+  {
+    printf("%s", error.message);
+    dbus_error_free(&error);
+  }
+
+  if (message)
+    dbus_message_unref(message);
+
+  if (reply)
+    dbus_message_unref(reply);
 }
 
 void Keyboard::send_action(int action) 

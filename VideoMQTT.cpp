@@ -117,6 +117,13 @@ void VideoMQTT::send_MQTT_msg(std::string *mess)
 	publish(NULL,topic_status.c_str(),mess->size(),message, QoS, 0);
 }
 
+void VideoMQTT::send_MQTT_msg(std::string *mess, std::string *topic)
+{
+	const char * message = mess->c_str();
+	//printf("%s : %d\n",message,mess->size());
+	publish(NULL,topic->c_str(),mess->size(),message, QoS, 0);
+}
+
 void VideoMQTT::send_dbus_cmd(const char * cmd)
 {
 	DBusMessage *message = NULL, *reply = NULL;

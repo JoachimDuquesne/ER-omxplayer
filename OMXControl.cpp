@@ -193,16 +193,26 @@ void OMXControl::dbus_disconnect()
 OMXControlResult OMXControl::getEvent()
 {
 // Will send status on mqtt_status_topic
+	std::string status;
+	
 	if(videoMQTT != NULL)
 	{
-		//printf("VideoControl getEvent_MQTT\n");
-		std::string status;
-		if (clock->OMXIsPaused())
-		  status = "Paused ";
-		else
-		  status = "Playing ";
+		if(riddle_active)
+		{
+			if(riddle_solved)
+				status = "Solved";
+			else
+				status = "InProgress";
+		} else
+		{
+			if (clock->OMXIsPaused())
+			  status = "Paused ";
+			else
+			  status = "Playing ";
 	
-		status.append( std::to_string((int)(clock->OMXMediaTime()/1000)) );
+			status.append( std::to_string((int)(clock->OMXMediaTime()/1000)) );
+		}
+		
 		videoMQTT->send_MQTT_msg(&status);
 	}
 
@@ -1139,6 +1149,61 @@ OMXControlResult OMXControl::handle_event(DBusMessage *m)
       dbus_respond_ok(m);
       return action; // Directly return enum
     }
+  }
+  else if (dbus_message_is_method_call(m, OMXPLAYER_DBUS_INTERFACE_PLAYER, "Riddle")) // Comming from HomeAssistant via MQTT
+  {
+  	printf("Riddle activated\n");
+  	riddle_active=true;
+  	dbus_respond_ok(m);
+  	return KeyConfig::ACTION_BLANK;
+  }
+  else if (dbus_message_is_method_call(m, OMXPLAYER_DBUS_INTERFACE_PLAYER, "Code")) // Coming from Keyboard input 
+  {
+  	char action;
+    DBusError error;
+    dbus_error_init(&error);
+    char command[100];
+    std::string Command;
+    std::string cmd_topic = "VideoControl";
+    
+  	dbus_message_get_args(m, &error, DBUS_TYPE_BYTE, &action, DBUS_TYPE_INVALID);
+  	dbus_respond_ok(m);
+  	
+  	if (dbus_error_is_set(&error))
+		dbus_error_free(&error);
+    else
+	  if(riddle_active && ! riddle_solved)
+	  {
+	  	if(riddle_count<4) // code not complete
+	  	{
+	  		riddle_code[riddle_count] = action;
+	  		riddle_count++;
+	  		printf("input %c %d/4\n",action,riddle_count);
+	  	}
+	  	
+	  	if(riddle_count == 4) // Code completed, if the riddle solved ?
+	  		if(riddle_code[0]== 'm' && riddle_code[1]== 'E' && riddle_code[2]== 't' && riddle_code[3]== 'A')
+	  		{
+	  			riddle_solved = true;
+	  			riddle_count=0;
+	  				  			
+				sprintf(command,"SetPosition %d",(solved_position));
+	  			Command = std::string(command);
+	  			videoMQTT->send_MQTT_msg(&Command, &cmd_topic);
+				printf(command);
+				
+	  			return KeyConfig::ACTION_BLANK;
+	  		}
+	  		else
+	  			riddle_count=0;
+	  	
+	  	sprintf(command,"SetPosition %d\n",(riddle_count*step_size + 1));
+	  	Command = std::string(command);
+	  	videoMQTT->send_MQTT_msg(&Command, &cmd_topic);
+	  	printf(command);
+	  }
+	  
+	return KeyConfig::ACTION_BLANK;
   }
   //----------------------------------------------------------------------------
   else {

@@ -26,6 +26,7 @@
  private:
   void restore_term();
   void send_action(int action);
+  void send_action(char action);
   int dbus_connect();
   void dbus_disconnect();
  };

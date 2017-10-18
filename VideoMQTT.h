@@ -34,6 +34,7 @@
   void Close();
   void Process();
   void send_MQTT_msg(std::string *mess);
+  void send_MQTT_msg(std::string *mess, std::string *topic);
   void setDbusName(std::string dbus_name);
   void Sleep(unsigned int dwMilliSeconds);
  
