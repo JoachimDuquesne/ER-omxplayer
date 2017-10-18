@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-#include "VideoMQTT.h"
+//#include "VideoMQTT.h"  // Is also included in OMXControl.h 
 
 #include <stdio.h>
 #include <signal.h>
@@ -942,7 +942,7 @@ int main(int argc, char *argv[])
       case ':':
         return EXIT_FAILURE;
         break;
-        
+
       case broker_ip_opt :  
       	m_mqtt_broker_ip = optarg;
       	break;
@@ -1044,13 +1044,21 @@ int main(int argc, char *argv[])
     printf("Only %dM of gpu_mem is configured. Try running \"sudo raspi-config\" and ensure that \"memory_split\" has a value of %d or greater\n", gpu_mem, min_gpu_mem);
 
   m_av_clock = new OMXClock();
-  int control_err = m_omxcontrol.init(
-    m_av_clock,
-    &m_player_audio,
-    &m_player_subtitles,
-    &m_omx_reader,
-    m_dbus_name
-  );
+  
+  if (strcmp(m_mqtt_broker_ip.c_str(),""))
+  {
+  	printf("%s, %s , %s, %d, %d\n",m_mqtt_broker_ip.c_str(), m_mqtt_topic_cmd.c_str(), m_mqtt_topic_status.c_str(), m_mqtt_port, m_mqtt_qos);
+	m_VideoMQTT = new VideoMQTT(m_mqtt_broker_ip, m_mqtt_topic_cmd, m_mqtt_topic_status, m_mqtt_port, m_mqtt_qos);   
+	m_VideoMQTT->setDbusName(m_dbus_name);   
+  } else
+  	printf("No MQTT Broker SET\n");
+
+  int control_err = m_omxcontrol.init(	m_av_clock,
+										&m_player_audio,
+										&m_player_subtitles,
+										&m_omx_reader,
+										m_dbus_name,
+										m_VideoMQTT );
   if (false == m_no_keys)
   {
     m_keyboard = new Keyboard();
@@ -1059,12 +1067,6 @@ int main(int argc, char *argv[])
   {
     m_keyboard->setKeymap(keymap);
     m_keyboard->setDbusName(m_dbus_name);
-  }
-
-  if (strcmp(m_mqtt_broker_ip.c_str(),""))
-  {
-	m_VideoMQTT = new VideoMQTT(m_mqtt_broker_ip, m_mqtt_topic_cmd, m_mqtt_topic_status, m_mqtt_port, m_mqtt_qos);   
-	m_VideoMQTT->setDbusName(m_dbus_name);   
   }
 
   if(!m_omx_reader.Open(m_filename.c_str(), m_dump_format, m_config_audio.is_live, m_timeout, m_cookie.c_str(), m_user_agent.c_str(), m_lavfdopts.c_str(), m_avdict.c_str()))
@@ -1229,7 +1231,7 @@ int main(int argc, char *argv[])
 
     double now = m_av_clock->GetAbsoluteClock();
     bool update = false;
-    if (m_last_check_time == 0.0 || m_last_check_time + DVD_MSEC_TO_TIME(20) <= now) 
+    if (m_last_check_time == 0.0 || m_last_check_time + DVD_MSEC_TO_TIME(100) <= now) 
     {
       update = true;
       m_last_check_time = now;

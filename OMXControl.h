@@ -7,6 +7,7 @@
 #include "OMXPlayerAudio.h"
 #include "OMXPlayerSubtitles.h"
 
+#include "VideoMQTT.h"
 
 #define MIN_RATE (1)
 #define MAX_RATE (4 * DVD_PLAYSPEED_NORMAL)
@@ -34,10 +35,13 @@ protected:
   OMXPlayerAudio     *audio;
   OMXReader          *reader;
   OMXPlayerSubtitles *subtitles;
+  VideoMQTT 		 *videoMQTT;
 public:
   OMXControl();
   ~OMXControl();
-  int init(OMXClock *m_av_clock, OMXPlayerAudio *m_player_audio, OMXPlayerSubtitles *m_player_subtitles, OMXReader *m_omx_reader, std::string& dbus_name);
+  int init(OMXClock *m_av_clock, OMXPlayerAudio *m_player_audio, 
+  		   OMXPlayerSubtitles *m_player_subtitles, OMXReader *m_omx_reader, 
+  		   std::string& dbus_name, VideoMQTT *m_VideoMQTT);
   OMXControlResult getEvent();
   void dispatch();
 private:

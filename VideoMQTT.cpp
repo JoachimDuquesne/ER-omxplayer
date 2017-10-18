@@ -1,7 +1,9 @@
 
 #include "VideoMQTT.h"
 
-VideoMQTT::VideoMQTT(std::string _host, std::string _topic_cmd, std::string _topic_status, int _port, int _QoS)
+VideoMQTT::VideoMQTT(std::string _host, std::string _topic_cmd, 
+					std::string _topic_status, int _port, int _QoS) 
+						: OMXThread() , mosqpp::mosquittopp()
 {
 	host 		= _host ;
 	topic_cmd 	= _topic_cmd;
@@ -10,7 +12,7 @@ VideoMQTT::VideoMQTT(std::string _host, std::string _topic_cmd, std::string _top
 	QoS  = _QoS;
 	
 	mosqpp::lib_init();
-	printf("VideoMQTT Init");
+	printf("VideoMQTT Init\n");
 	connect(host.c_str(), port, 120);
 	subscribe(NULL,topic_cmd.c_str(),QoS);
 	
@@ -25,7 +27,6 @@ VideoMQTT::VideoMQTT(std::string _host, std::string _topic_cmd, std::string _top
 
 	dbus_threads_init_default();
 	Create();
-	m_action = -1;
 }
 
 VideoMQTT::~VideoMQTT() 
@@ -66,41 +67,54 @@ void VideoMQTT::Process()
   }
 }
 
-void VideoMQTT::on_message(const struct mosquitto_message *mess)
+void VideoMQTT::on_message(const struct mosquitto_message *message)
 {
-	std::string s = (char*)mess->payload;
-	s.append(" ");
+//printf("on_message mqtt \n");
+	std::string mess = std::string((const char *)message->payload);
+	mess.append(" ");
 	size_t pos = 0;
 	std::string cmd[5];
 	uint8_t	i=0;
 
-	fprintf(stderr,"%s\n",s.c_str());
+	//fprintf(stderr,"%s\n",mess.c_str());
 
-	while( (pos=s.find(" ")) != std::string::npos)
+	while( (pos=mess.find(" ")) != std::string::npos)
 	{
-		cmd[i]=s.substr(0,pos);
-		s.erase(0,pos+1);
-		//fprintf(stderr,"%s ",cmd[i].c_str());
+		cmd[i]=mess.substr(0,pos);
+		mess.erase(0,pos+1);
+		//fprintf(stderr,"%s_ ",cmd[i].c_str());
 		i++;
 	}
-	fprintf(stderr,"\n");
-
-  if(!strcmp(cmd[0].c_str(),"SetPosition"))
+	//fprintf(stderr,"\n");
+  
+  if(i==0)
   {
-    send_dbus_cmd(cmd[0].c_str(), (int64_t)(atoi(cmd[1].c_str())*1000000));
-  	Sleep(00);
-  	send_dbus_cmd("Play");
-  	Sleep(1000);
-	send_dbus_cmd("Pause");
-  } else
+  	return;
+  }
+  else if(i==1) // only a command, not args
   {
   	send_dbus_cmd(cmd[0].c_str());
   }
+  else if(i==2) // One arg
+  {
+ 	if(!strcmp(cmd[0].c_str(),"SetPosition"))
+	{
+		send_dbus_cmd(cmd[0].c_str(), (int64_t)(atoi(cmd[1].c_str())*1000000));
+	  	Sleep(00);
+	  	send_dbus_cmd("Play");
+	  	Sleep(1000);
+		send_dbus_cmd("Pause");
+  	} 
+
+
+  }
 }
 
-void VideoMQTT::send_MQTT_msg(const struct mosquitto_message *mess)
+void VideoMQTT::send_MQTT_msg(std::string *mess)
 {
-	
+	const char * message = mess->c_str();
+	//printf("%s : %d\n",message,mess->size());
+	publish(NULL,topic_status.c_str(),mess->size(),message, QoS, 0);
 }
 
 void VideoMQTT::send_dbus_cmd(const char * cmd)
@@ -133,6 +147,7 @@ void VideoMQTT::send_dbus_cmd(const char * cmd)
   return;
 
 fail:
+printf("dbus fail: ");
   if (dbus_error_is_set(&error)) 
   {
     printf("%s", error.message);
@@ -178,6 +193,7 @@ void VideoMQTT::send_dbus_cmd(const char * cmd, int32_t arg)
   return;
 
 fail:
+printf("dbus32 fail: ");
   if (dbus_error_is_set(&error)) 
   {
     printf("%s", error.message);
@@ -195,6 +211,7 @@ void VideoMQTT::send_dbus_cmd(const char * cmd, int64_t arg)
 {
 	DBusMessage *message = NULL, *reply = NULL;
 	DBusError error;
+	const char *oPath = "/not/used";
 	
 	if (!conn)
 		return;
@@ -209,8 +226,10 @@ void VideoMQTT::send_dbus_cmd(const char * cmd, int64_t arg)
     CLog::Log(LOGWARNING, "VideoMQTT: DBus error 1");
     goto fail;
   }
-  
-  dbus_message_append_args(message, DBUS_TYPE_INT64, &arg, DBUS_TYPE_INVALID);
+	
+  dbus_message_append_args(message, DBUS_TYPE_OBJECT_PATH, &oPath,
+  									DBUS_TYPE_INT64, &arg,
+  									DBUS_TYPE_INVALID);
 
   reply = dbus_connection_send_with_reply_and_block(conn, message, -1, &error);
 
@@ -223,6 +242,7 @@ void VideoMQTT::send_dbus_cmd(const char * cmd, int64_t arg)
   return;
 
 fail:
+printf("dbus64 fail: ");
   if (dbus_error_is_set(&error)) 
   {
     printf("%s", error.message);

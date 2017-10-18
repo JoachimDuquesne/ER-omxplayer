@@ -20,11 +20,9 @@
  class VideoMQTT : public OMXThread , public mosqpp::mosquittopp
  {
  protected:
-  int m_action;
   std::string host;
   int port;
   int QoS;
-  int keepalive;
   std::string topic_cmd;
   std::string topic_status;
   DBusConnection *conn;
@@ -35,13 +33,12 @@
   ~VideoMQTT();
   void Close();
   void Process();
-  void send_MQTT_msg(const struct mosquitto_message *mess);
+  void send_MQTT_msg(std::string *mess);
   void setDbusName(std::string dbus_name);
   void Sleep(unsigned int dwMilliSeconds);
-  //int getEvent();
  
  private:
-  void on_message(const struct mosquitto_message *mess);
+  void on_message(const struct mosquitto_message * message);
   void send_dbus_cmd(const char * cmd);
   void send_dbus_cmd(const char * cmd, int32_t arg);
   void send_dbus_cmd(const char * cmd, int64_t arg);

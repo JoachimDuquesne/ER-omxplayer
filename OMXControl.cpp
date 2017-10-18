@@ -14,6 +14,7 @@
 #include "KeyConfig.h"
 
 
+
 void ToURI(const std::string& str, char *uri)
 {
   //Test if URL/URI
@@ -92,14 +93,16 @@ OMXControl::~OMXControl()
     dbus_disconnect();
 }
 
-int OMXControl::init(OMXClock *m_av_clock, OMXPlayerAudio *m_player_audio, OMXPlayerSubtitles *m_player_subtitles, OMXReader *m_omx_reader, std::string& dbus_name)
+int OMXControl::init(OMXClock *m_av_clock, OMXPlayerAudio *m_player_audio, OMXPlayerSubtitles *m_player_subtitles, 
+					 OMXReader *m_omx_reader, std::string& dbus_name, VideoMQTT *m_VideoMQTT)
 {
   int ret = 0;
   clock     = m_av_clock;
   audio     = m_player_audio;
   subtitles = m_player_subtitles;
   reader    = m_omx_reader;
-
+  videoMQTT = m_VideoMQTT;
+  
   if (dbus_connect(dbus_name) < 0)
   {
     CLog::Log(LOGWARNING, "DBus connection failed, trying alternate");
@@ -189,6 +192,20 @@ void OMXControl::dbus_disconnect()
 
 OMXControlResult OMXControl::getEvent()
 {
+// Will send status on mqtt_status_topic
+	if(videoMQTT != NULL)
+	{
+		//printf("VideoControl getEvent_MQTT\n");
+		std::string status;
+		if (clock->OMXIsPaused())
+		  status = "Paused ";
+		else
+		  status = "Playing ";
+	
+		status.append( std::to_string((int)(clock->OMXMediaTime()/1000)) );
+		videoMQTT->send_MQTT_msg(&status);
+	}
+
   if (!bus)
     return KeyConfig::ACTION_BLANK;
 
@@ -201,7 +218,7 @@ OMXControlResult OMXControl::getEvent()
   CLog::Log(LOGDEBUG, "Popped message member: %s interface: %s type: %d path: %s", dbus_message_get_member(m), dbus_message_get_interface(m), dbus_message_get_type(m), dbus_message_get_path(m) );
   OMXControlResult result = handle_event(m);
   dbus_message_unref(m);
-
+	
   return result;
 }
 
