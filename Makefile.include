@@ -5,8 +5,8 @@ CFLAGS +=  -mfloat-abi=hard -mcpu=arm1176jzf-s -fomit-frame-pointer -mabi=aapcs-
 BUILDROOT	:=/usr/local/src/omxplayer
 TOOLCHAIN	:=/usr/
 LD			:= $(TOOLCHAIN)/bin/ld
-CC			:= $(TOOLCHAIN)/bin/gcc-4.7
-CXX       	:= $(TOOLCHAIN)/bin/g++-4.7
+CC			:= $(TOOLCHAIN)/bin/gcc
+CXX       	:= $(TOOLCHAIN)/bin/g++
 OBJDUMP		:= $(TOOLCHAIN)/bin/objdump
 RANLIB		:= $(TOOLCHAIN)/bin/ranlib
 STRIP		:= $(TOOLCHAIN)/bin/strip
