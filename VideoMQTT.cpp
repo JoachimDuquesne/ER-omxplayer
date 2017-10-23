@@ -91,22 +91,33 @@ void VideoMQTT::on_message(const struct mosquitto_message *message)
   {
   	return;
   }
-  else if(i==1) // only a command, not args
+  else if(i==1) // only a command, no args
   {
-  	send_dbus_cmd(cmd[0].c_str());
+	if(!strcmp(cmd[0].c_str(),"reset"))
+	{
+		int64_t a=0;
+		send_dbus_cmd("SetPosition", a);
+	  	send_dbus_cmd("Play");
+	  	Sleep(1000);
+		send_dbus_cmd("UnHideVideo");
+		send_dbus_cmd("Pause");
+	} else 
+	{
+		send_dbus_cmd(cmd[0].c_str());
+	}
   }
   else if(i==2) // One arg
   {
  	if(!strcmp(cmd[0].c_str(),"SetPosition"))
 	{
 		send_dbus_cmd(cmd[0].c_str(), (int64_t)(atoi(cmd[1].c_str())*1000000));
-	  	Sleep(00);
+  	}  
+	else if(!strcmp(cmd[0].c_str(),"setPosition"))
+	{
+		send_dbus_cmd("SetPosition", (int64_t)(atoi(cmd[1].c_str())*1000000));
 	  	send_dbus_cmd("Play");
 	  	Sleep(1000);
-		send_dbus_cmd("Pause");
   	} 
-
-
   }
 }
 
