@@ -23,6 +23,7 @@
   std::string host;
   int port;
   int QoS;
+  char client_id[50];
   std::string topic_cmd;
   std::string topic_status;
   DBusConnection *conn;

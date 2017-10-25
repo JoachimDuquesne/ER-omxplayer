@@ -1048,10 +1048,11 @@ int main(int argc, char *argv[])
   if (strcmp(m_mqtt_broker_ip.c_str(),""))
   {
   	printf("%s, %s , %s, %d, %d\n",m_mqtt_broker_ip.c_str(), m_mqtt_topic_cmd.c_str(), m_mqtt_topic_status.c_str(), m_mqtt_port, m_mqtt_qos);
+
 	m_VideoMQTT = new VideoMQTT(m_mqtt_broker_ip, m_mqtt_topic_cmd, m_mqtt_topic_status, m_mqtt_port, m_mqtt_qos);   
 	m_VideoMQTT->setDbusName(m_dbus_name);   
   } else
-  	printf("No MQTT Broker SET\n");
+  	printf("No MQTT Broker\n");
 
   int control_err = m_omxcontrol.init(	m_av_clock,
 										&m_player_audio,

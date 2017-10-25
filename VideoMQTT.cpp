@@ -10,8 +10,9 @@ VideoMQTT::VideoMQTT(std::string _host, std::string _topic_cmd,
 	topic_status = _topic_status ;
 	port = _port;
 	QoS  = _QoS;
-	
+	gethostname(client_id,50);
 	mosqpp::lib_init();
+	reinitialise(client_id,true);
 	printf("VideoMQTT Init\n");
 	connect(host.c_str(), port, 120);
 	subscribe(NULL,topic_cmd.c_str(),QoS);
