@@ -70,14 +70,14 @@ void VideoMQTT::Process()
 
 void VideoMQTT::on_message(const struct mosquitto_message *message)
 {
-//printf("on_message mqtt \n");
+printf("on_message mqtt \n");
 	std::string mess = std::string((const char *)message->payload);
 	mess.append(" ");
 	size_t pos = 0;
 	std::string cmd[5];
 	uint8_t	i=0;
 
-	//fprintf(stderr,"%s\n",mess.c_str());
+	
 
 	while( (pos=mess.find(" ")) != std::string::npos)
 	{
@@ -87,6 +87,7 @@ void VideoMQTT::on_message(const struct mosquitto_message *message)
 		i++;
 	}
 	//fprintf(stderr,"\n");
+  printf("%s\n",mess.c_str());
   
   if(i==0)
   {
@@ -111,11 +112,11 @@ void VideoMQTT::on_message(const struct mosquitto_message *message)
   {
  	if(!strcmp(cmd[0].c_str(),"SetPosition"))
 	{
-		send_dbus_cmd(cmd[0].c_str(), (int64_t)(atoi(cmd[1].c_str())*1000000));
+		send_dbus_cmd(cmd[0].c_str(), (int64_t)(std::stoull(cmd[1])*1000000));
   	}  
 	else if(!strcmp(cmd[0].c_str(),"setPosition"))
 	{
-		send_dbus_cmd("SetPosition", (int64_t)(atoi(cmd[1].c_str())*1000000));
+		send_dbus_cmd("SetPosition", (int64_t)(std::stoull(cmd[1])*1000000));
 	  	send_dbus_cmd("Play");
 	  	Sleep(1000);
   	} 
