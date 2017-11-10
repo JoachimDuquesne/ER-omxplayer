@@ -2,21 +2,23 @@
 #define OMXPLAYER_DBUS_INTERFACE_ROOT "org.mpris.MediaPlayer2"
 #define OMXPLAYER_DBUS_INTERFACE_PLAYER "org.mpris.MediaPlayer2.Player"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstdint>
 
 #include <sys/ioctl.h>
-#include <string.h>
+#include <cstring>
 #include <unistd.h>
 #include <fcntl.h>
 #include <dbus/dbus.h>
-#include <errno.h>
+#include <cerrno>
 
 #include "utils/log.h"
 
 #include <mosquittopp.h>
 #include "OMXThread.h"
+
+#define MAXERRORCOUNT	100
 
  class VideoMQTT : public OMXThread , public mosqpp::mosquittopp
  {
@@ -25,6 +27,7 @@
   int port;
   int QoS;
   char client_id[50];
+  int errorCount=0;
   std::string topic_cmd;
   std::string topic_status;
   DBusConnection *conn;

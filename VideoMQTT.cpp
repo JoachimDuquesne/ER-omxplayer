@@ -12,8 +12,9 @@ VideoMQTT::VideoMQTT(std::string _host, std::string _topic_cmd,
 	QoS  = _QoS;
 	gethostname(client_id,50);
 	mosqpp::lib_init();
+	sprintf(client_id,"%s_omx",client_id);
 	reinitialise(client_id,true);
-	printf("VideoMQTT Init\n");
+	printf("VideoMQTT client_id:%s\n",client_id);
 	connect(host.c_str(), port, 120);
 	subscribe(NULL,topic_cmd.c_str(),QoS);
 	
@@ -57,12 +58,67 @@ void VideoMQTT::Sleep(unsigned int dwMilliSeconds)
 
 void VideoMQTT::Process() 
 {
+  errorCount = 0; // Just to be sure
+  
+//  loop_start();
+
   while(!m_bStop)
   {
     if (conn)
       dbus_connection_read_write_dispatch(conn, 0);
+	
+	//loop_forever(100,1);
 
-	loop(10,1);
+	switch (int a=loop(10,1) )
+	{
+	case MOSQ_ERR_SUCCESS:
+		errorCount = 0; // Reset errorCount
+		//fprintf(stderr,"MQTT loop : everything is working\n");
+		break;
+	case MOSQ_ERR_INVAL:
+		errorCount++;
+		fprintf(stderr,"Error MQTT loop : the input parameters were invalid\n");
+		exit(EXIT_FAILURE);
+		break;
+	case MOSQ_ERR_NOMEM:
+		errorCount++;
+		fprintf(stderr,"Error MQTT loop : out of memory condition\n");
+		break;
+	case MOSQ_ERR_NO_CONN:
+		errorCount++;
+		reconnect();
+		fprintf(stderr,"Error MQTT loop : the client isn’t connected to a broker\n");
+		break;
+	case MOSQ_ERR_CONN_LOST:
+		errorCount++;
+		while(a)
+		{
+			fprintf(stderr,"Error MQTT loop : the connection to the broker was lost\n");
+			//disconnect();
+			Sleep(10);
+			//reinitialise(client_id,true);
+			a = reconnect();
+			fprintf(stderr,"Attempting to reconnect. connect() returned : %d \n",a);
+			Sleep(500);
+		}
+		subscribe(NULL,topic_cmd.c_str(),QoS);
+		break;
+	case MOSQ_ERR_PROTOCOL:
+		errorCount++;
+		fprintf(stderr,"Error MQTT loop : protocol error communicating with the broker\n");
+		break;
+	case MOSQ_ERR_ERRNO:
+		errorCount++;
+		fprintf(stderr,"Error MQTT loop : system call returned an error\n");
+		perror("");
+		break;
+	}
+	
+	/*if(errorCount > MAXERRORCOUNT)
+	{
+		fprintf(stderr,"Error MQTT loop : MAX ERROR COUNT REACHED\n");
+		exit(EXIT_FAILURE);
+	}*/
 	
     Sleep(20);
   }
@@ -70,7 +126,13 @@ void VideoMQTT::Process()
 
 void VideoMQTT::on_message(const struct mosquitto_message *message)
 {
-printf("on_message mqtt \n");
+//printf("on_message mqtt \n");
+//	std::string topic = std::string((const char *)message->topic);
+//	if(strcmp(topic.c_str(),topic_cmd.c_str()))
+//	{// The message was not for us
+//		return;
+//	}
+
 	std::string mess = std::string((const char *)message->payload);
 	mess.append(" ");
 	size_t pos = 0;
