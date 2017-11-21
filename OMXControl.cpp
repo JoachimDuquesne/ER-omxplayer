@@ -193,7 +193,7 @@ void OMXControl::dbus_disconnect()
 OMXControlResult OMXControl::getEvent()
 {
 // Will send status on mqtt_status_topic
-	if(videoMQTT != NULL)
+/*	if(videoMQTT != NULL)
 	{
 		//printf("VideoControl getEvent_MQTT\n");
 		std::string status;
@@ -205,7 +205,7 @@ OMXControlResult OMXControl::getEvent()
 		status.append( std::to_string((int)(clock->OMXMediaTime()/1000)) );
 		videoMQTT->send_MQTT_msg(&status);
 	}
-
+*/
   if (!bus)
     return KeyConfig::ACTION_BLANK;
 
